@@ -114,7 +114,7 @@ main(int UNUSED_PARAM(argc), char** UNUSED_PARAM(argv)) {
 	}
 
 	// Load the texture atlas
-	SDL_Surface* texture_atlas = load_png("./data/texture-pack-16x16.png");
+	SDL_Surface* texture_atlas = load_png("./data/texture-atlas-16x16.png");
 	if (!texture_atlas) {
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not load texture atlas: %s\n", SDL_GetError());
 		SDL_Quit();
