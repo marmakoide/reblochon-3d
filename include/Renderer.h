@@ -12,10 +12,12 @@ namespace reb {
 	public:
 		Renderer(int w,
 		         int h,
+							SDL_Surface* texture_atlas,
 		         float focal_length) :
 			m_w(w),
 			m_h(h),
 			m_focal_length(focal_length),
+			m_texture_atlas(texture_atlas),
 			m_ray_direction_list(m_w, 3) { 
 			setup();
 		}
@@ -123,6 +125,7 @@ namespace reb {
 	
 		int m_w, m_h;
 		float m_focal_length;
+		SDL_Surface* m_texture_atlas;
 		Eigen::Matrix<float, Eigen::Dynamic, 3> m_ray_direction_list;
 	}; //  class Renderer
 } // namespace reb

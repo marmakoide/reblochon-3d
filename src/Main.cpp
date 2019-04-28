@@ -104,7 +104,6 @@ main(int UNUSED_PARAM(argc), char** UNUSED_PARAM(argv)) {
 	State state;
 	state.set((180.f / M_PI) * 30.f, Eigen::Vector3f(4.5f, 4.5f, 1.7f));
 
-	Renderer view_renderer(SCREEN_WIDTH, SCREEN_HEIGHT, Renderer::focal_length_from_angle((180.f / M_PI) * 60.f));
 	Map map;
 	load_map("./data/test.png", map);
 
@@ -121,6 +120,10 @@ main(int UNUSED_PARAM(argc), char** UNUSED_PARAM(argv)) {
 		SDL_Quit();
 		return EXIT_FAILURE;
 	}
+
+	Renderer view_renderer(SCREEN_WIDTH, SCREEN_HEIGHT,
+	                       texture_atlas,
+	                       Renderer::focal_length_from_angle((180.f / M_PI) * 60.f));
 
 	// Create a window
 	SDL_Window* window = SDL_CreateWindow("reblochon-3d editor", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, 0);
