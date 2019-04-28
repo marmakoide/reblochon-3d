@@ -114,6 +114,15 @@ main(int UNUSED_PARAM(argc), char** UNUSED_PARAM(argv)) {
 		return EXIT_FAILURE;
 	}
 
+	// Load the texture atlas
+	SDL_Surface* texture_atlas = load_png("./data/texture-pack-16x16.png");
+	if (!texture_atlas) {
+		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not load texture atlas: %s\n", SDL_GetError());
+		SDL_Quit();
+		return EXIT_FAILURE;
+	}
+
+
 	// Create a window
 	SDL_Window* window = SDL_CreateWindow("reblochon-3d editor", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, 0);
 	if (!window) {
@@ -131,9 +140,7 @@ main(int UNUSED_PARAM(argc), char** UNUSED_PARAM(argv)) {
 		return EXIT_FAILURE;
 	}
 
-	// Create an indexed color framebuffer
-	SDL_Surface* texture_atlas = load_png("./data/texture-pack-16x16.png");
-	
+	// Create an indexed color framebuffer	
 	SDL_Surface* indexed_color_framebuffer =
 		SDL_CreateRGBSurface(0,
 		                     SCREEN_WIDTH, SCREEN_HEIGHT, 8,
@@ -193,6 +200,7 @@ main(int UNUSED_PARAM(argc), char** UNUSED_PARAM(argv)) {
 
 	// Free ressources
 	SDL_FreeSurface(indexed_color_framebuffer);
+	SDL_FreeSurface(texture_atlas);
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
 	SDL_Quit();
