@@ -104,8 +104,12 @@ main(int UNUSED_PARAM(argc), char** UNUSED_PARAM(argv)) {
 	State state;
 	state.set((180.f / M_PI) * 30.f, Eigen::Vector3f(4.5f, 4.5f, 1.7f));
 
+	// Map loading
 	Map map;
-	load_map("./data/test.png", map);
+	if (!load_map("./data/test.png", map)) {
+		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not load map: %s\n", SDL_GetError());
+		return EXIT_FAILURE;
+	}
 
 	// SDL initialization
 	if (SDL_Init(SDL_INIT_VIDEO)) {
