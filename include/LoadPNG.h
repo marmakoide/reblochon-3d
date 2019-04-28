@@ -6,6 +6,10 @@
 
 
 namespace reb {
+	/*
+	 * Load a PNG image, accepting only 8 bits indexed colors images
+	 */
+
 	SDL_Surface*
 	load_png(const char* path);
 } // namespace reb
