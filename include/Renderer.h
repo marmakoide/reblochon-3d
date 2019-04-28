@@ -80,7 +80,7 @@ namespace reb {
 								y_end = m_h;
 
 							// Draw the vertical line
-							draw_vertical_line(dst, i, int(y_start), int(y_end));
+							draw_vertical_line_single_color(dst, i, int(y_start), int(y_end), 63);
 
 							// Done drawing
 							column_completed = true;
@@ -99,13 +99,14 @@ namespace reb {
 
 	private:
 		void 
-		draw_vertical_line(SDL_Surface* dst,
-		                   int x, int y_start, int y_end) {
+		draw_vertical_line_single_color(SDL_Surface* dst,
+		                                int x, int y_start, int y_end,
+		                                int color_id) {
 			uint8_t* pixel = (uint8_t*)dst->pixels;
 			pixel += y_start * dst->pitch + x;
 
 			for(int i = y_end - y_start; i != 0; --i, pixel += dst->pitch)
-				*pixel = 63;
+				*pixel = color_id;
 		}
 
 		void
