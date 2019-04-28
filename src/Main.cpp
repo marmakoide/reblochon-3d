@@ -115,7 +115,7 @@ main(int UNUSED_PARAM(argc), char** UNUSED_PARAM(argv)) {
 	}
 
 	// Create a window
-	SDL_Window* window = SDL_CreateWindow("reblochon-3d", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, 0);
+	SDL_Window* window = SDL_CreateWindow("reblochon-3d editor", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, 0);
 	if (!window) {
 		SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "Could not create window: %s\n", SDL_GetError());
 		SDL_Quit();
