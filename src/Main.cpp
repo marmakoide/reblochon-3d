@@ -122,11 +122,11 @@ main(int UNUSED_PARAM(argc), char** UNUSED_PARAM(argv)) {
 		return EXIT_FAILURE;
 	}
 
-
 	// Create a window
 	SDL_Window* window = SDL_CreateWindow("reblochon-3d editor", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, 0);
 	if (!window) {
 		SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "Could not create window: %s\n", SDL_GetError());
+		SDL_FreeSurface(texture_atlas);
 		SDL_Quit();
 		return EXIT_FAILURE;
 	}
@@ -136,7 +136,8 @@ main(int UNUSED_PARAM(argc), char** UNUSED_PARAM(argv)) {
 	SDL_Renderer* renderer = SDL_CreateSoftwareRenderer(framebuffer);
 	if (!renderer) {
 		SDL_DestroyWindow(window);
-		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not create SDL renderer : %s\n", SDL_GetError());
+		SDL_FreeSurface(texture_atlas);
+		SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "Could not create SDL renderer : %s\n", SDL_GetError());
 		return EXIT_FAILURE;
 	}
 
