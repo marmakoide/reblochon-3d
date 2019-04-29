@@ -10,6 +10,8 @@ A silly 3d game engine using mid 90's rendering tech
 
 The intention is to have a game engine as convenient as [love2d](https://love2d.org)
 
+![screenshot of current state](splash.png)
+
 ## Getting Started
 
 ### Prerequisites
