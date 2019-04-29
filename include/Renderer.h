@@ -94,7 +94,7 @@ namespace reb {
 							// Draw the vertical line
 							//draw_vertical_line_single_color(dst, i, int(y_start_clipped), int(y_end_clipped), 63);
 							if (y_start_clipped < y_end_clipped)
-								draw_vertical_line_textured(dst, i, int(y_start_clipped), int(y_end_clipped), u, v_start_clipped, v_end_clipped);
+								draw_vertical_line_textured(dst, i, int(y_start_clipped), int(y_end_clipped), u, v_start_clipped, v_end_clipped, 4);
 
 							// Done drawing
 							column_completed = true;
@@ -116,11 +116,13 @@ namespace reb {
 		void 
 		draw_vertical_line_textured(SDL_Surface* dst,
 		                            int x, int y_start, int y_end,
-		                            float u, float v_start, float v_end) {
+		                            float u, float v_start, float v_end,
+		                            int texture_id) {
 			float k = (v_end - v_start) / (y_end - y_start);
 			int u_offset = int(16 * u) % 16;
 
 			uint8_t const* src_pixel = (uint8_t const*)m_texture_atlas->pixels;
+			src_pixel += 16 * (texture_id % 16) + 16 * m_texture_atlas->pitch * (texture_id / 16);
 			src_pixel += u_offset;
 
 			uint8_t* dst_pixel = (uint8_t*)dst->pixels;
