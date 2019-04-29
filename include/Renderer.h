@@ -4,6 +4,7 @@
 #include <Eigen/Geometry>
 #include "Map.h"
 #include "RayTraversal.h"
+#include <iostream>
 
 
 
@@ -37,7 +38,7 @@ namespace reb {
 			Grid2d grid(Eigen::Vector2i(map.w(), map.h()), 1.);
 
 			// Clear the surface
-			SDL_FillRect(dst, NULL, 151);
+			SDL_FillRect(dst, NULL, 149);
 
 			// Setup constants
 			float wall_height = 2.5f;
@@ -55,17 +56,21 @@ namespace reb {
 
 				RayTraversal traversal(grid, pos_offset, ray_dir);
 				float prev_dist = traversal.distance_init();
+				float prev_axis = 1 - traversal.axis();
 
 				for( ; traversal.has_next() and !column_completed; traversal.next()) {
 					if (map(traversal.i(), traversal.j()) != 0) {
 						// Compute the wall slice
-						float y_end = wall_height;
-						float y_start = 0.;
+						float y_start = wall_height;
+						float y_end = 0;
+
+						float v_start = 0;
+						float v_end = 2.5f;
 
 						y_start -= view_height;
 						y_end -= view_height;
 
-						float k = ray_norm / prev_dist; 
+						float k = -ray_norm / prev_dist; 
 						y_start *= k; 
 						y_end *= k; 
 
@@ -74,21 +79,29 @@ namespace reb {
 
 						// Render the wall slice
 						if ((y_end > 0) and (y_start < m_h)) {
-							// Clip the vertical line
-							if (y_start < 0)
-								y_start = 0;
+							// Clip the vertical line position
+							float y_start_clipped = std::fmax(std::ceil(y_start - .5f), 0.f);
+							float y_end_clipped   = std::fmin(std::ceil(y_end - .5f), m_h);
 
-							if (y_end > m_h)
-								y_end = m_h;
+							// Clip the V texture coordinates
+							float v_start_clipped = v_start + (y_start_clipped - y_start) * ((v_end - v_start) / (y_end - y_start));
+							float v_end_clipped = v_start + (y_end_clipped - y_start) * ((v_end - v_start) / (y_end - y_start));
+
+							// U texture coordinates
+							float u = pos_offset[prev_axis] + prev_dist * ray_dir[prev_axis];
+							u = u - std::floor(u);
 
 							// Draw the vertical line
-							draw_vertical_line_single_color(dst, i, int(y_start), int(y_end), 63);
+							//draw_vertical_line_single_color(dst, i, int(y_start_clipped), int(y_end_clipped), 63);
+							if (y_start_clipped < y_end_clipped)
+								draw_vertical_line_textured(dst, i, int(y_start_clipped), int(y_end_clipped), u, v_start_clipped, v_end_clipped);
 
 							// Done drawing
 							column_completed = true;
 						}
 					}
 
+					prev_axis = 1 - traversal.axis();
 					prev_dist = traversal.distance(); 
 				}
 			}
@@ -101,8 +114,30 @@ namespace reb {
 
 	private:
 		void 
+		draw_vertical_line_textured(SDL_Surface* dst,
+		                            int x, int y_start, int y_end,
+		                            float u, float v_start, float v_end) {
+			float k = (v_end - v_start) / (y_end - y_start);
+			int u_offset = int(16 * u) % 16;
+
+			uint8_t const* src_pixel = (uint8_t const*)m_texture_atlas->pixels;
+			src_pixel += u_offset;
+
+			uint8_t* dst_pixel = (uint8_t*)dst->pixels;
+			dst_pixel += ((int)std::floor(y_start)) * dst->pitch + x;
+
+			int i_end = y_end  - y_start;
+			for(int i = 0; i < i_end; ++i, dst_pixel += dst->pitch) {
+				int v_offset = std::floor(16 * (k * (i + .5f) + v_start));
+				v_offset &= 15;
+				*dst_pixel = src_pixel[v_offset * m_texture_atlas->pitch];
+			}
+		}
+
+		void 
 		draw_vertical_line_single_color(SDL_Surface* dst,
-		                                int x, int y_start, int y_end,
+		                                int x,
+		                                int y_start, int y_end,
 		                                int color_id) {
 			uint8_t* pixel = (uint8_t*)dst->pixels;
 			pixel += y_start * dst->pitch + x;

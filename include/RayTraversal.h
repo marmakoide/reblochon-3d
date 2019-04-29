@@ -138,6 +138,13 @@ namespace reb {
 			return m_t_init;
 		}
 
+		int
+		axis() const {
+			Eigen::Index axis;
+			m_t.minCoeff(&axis);
+			return axis;
+		}
+
 		float
 		distance() const {
 			Eigen::Index axis;
