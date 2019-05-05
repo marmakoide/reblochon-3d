@@ -46,7 +46,7 @@ class State {
 public:
 	State() :
 		m_angle(0.f),
-		m_angle_delta((M_PI / 180.f) * 1.f),
+		m_angle_delta((M_PI / 180.f) * 2.5f),
 		m_pos(Eigen::Vector3f::Zero()),
 		m_pos_delta(Eigen::Vector3f(0.f, .1f, 0.f)) { }
 
@@ -102,7 +102,7 @@ private:
 int
 main(int UNUSED_PARAM(argc), char** UNUSED_PARAM(argv)) {
 	State state;
-	state.set((180.f / M_PI) * 30.f, Eigen::Vector3f(4.5f, 4.5f, 1.7f));
+	state.set((M_PI / 180.f) * 30.f, Eigen::Vector3f(4.5f, 4.5f, 1.7f));
 
 	// Map loading
 	Map map;
@@ -127,7 +127,7 @@ main(int UNUSED_PARAM(argc), char** UNUSED_PARAM(argv)) {
 
 	Renderer view_renderer(SCREEN_WIDTH, SCREEN_HEIGHT,
 	                       texture_atlas,
-	                       Renderer::focal_length_from_angle((180.f / M_PI) * 60.f));
+	                       Renderer::focal_length_from_angle((M_PI / 180.f) * 60.f));
 
 	// Create a window
 	SDL_Window* window = SDL_CreateWindow("reblochon-3d editor", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, 0);
