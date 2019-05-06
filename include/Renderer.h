@@ -102,35 +102,33 @@ namespace reb {
 			void
 			clip(float y_lo, float y_hi) {
 				float y_delta = m_y_end - m_y_start;
+				float y_lo_diff = y_lo - m_y_start;
+				float y_hi_diff = y_hi - m_y_start;
+
+				// Update y_start and y_end
+				m_y_start = y_lo;
+				m_y_end   = y_hi;
 
 				// Clip Z
 				float w_start = 1. / m_z_start;
 				float w_end   = 1. / m_z_end;
 				float w_delta = (w_end - w_start) / y_delta;
-				float w_start_clipped = w_start + w_delta * (y_lo - m_y_start);
-				float w_end_clipped   = w_start + w_delta * (y_hi - m_y_start);
+				float w_start_clipped = w_start + w_delta * y_lo_diff;
+				float w_end_clipped   = w_start + w_delta * y_hi_diff;
 				m_z_start = 1. / w_start_clipped;
 				m_z_end   = 1. / w_end_clipped;
 
 				// Clip U texture coordinates, linear in 1/Z
 				float uw_start = w_start * m_u_start;
 				float uw_delta = (w_end * m_u_end - uw_start) / y_delta;
-				float u_start_clipped = (uw_start + uw_delta * (y_lo - m_y_start)) * m_z_start;
-				float u_end_clipped   = (uw_start + uw_delta * (y_hi - m_y_start)) * m_z_end;
-				m_u_start = u_start_clipped;
-				m_u_end   = u_end_clipped;
+				m_u_start = (uw_start + uw_delta * y_lo_diff) * m_z_start;
+				m_u_end   = (uw_start + uw_delta * y_hi_diff) * m_z_end;
 
 				// Clip V texture coordinates, linear in 1/Z
 				float vw_start = w_start * m_v_start;
 				float vw_delta = (w_end * m_v_end - vw_start) / y_delta;
-				float v_start_clipped = (vw_start + vw_delta * (y_lo - m_y_start)) * m_z_start;
-				float v_end_clipped   = (vw_start + vw_delta * (y_hi - m_y_start)) * m_z_end;
-				m_v_start = v_start_clipped;
-				m_v_end   = v_end_clipped;
-
-				// Update y_start and y_end
-				m_y_start = y_lo;
-				m_y_end = y_hi;
+				m_v_start = (vw_start + vw_delta * y_lo_diff) * m_z_start;
+				m_v_end   = (vw_start + vw_delta * y_hi_diff) * m_z_end;
 			}
 
 		private:
