@@ -294,12 +294,15 @@ namespace reb {
 
 			float w_start = 1.f / column.z_start();
 			float w_delta = ((1.f / column.z_end()) - (1.f / column.z_start())) * inv_y_delta;
+			w_start += .5f * w_delta;
 
 			float uw_start = column.u_start() / column.z_start();
 			float uw_delta = (column.u_end() / column.z_end() - uw_start) * inv_y_delta;
+			uw_start += .5f * uw_delta;
 
 			float vw_start = column.v_start() / column.z_start();
 			float vw_delta = (column.v_end() / column.z_end() - vw_start) * inv_y_delta;
+			vw_start += .5f * vw_delta;
 
 			uint8_t const* src_pixel = (uint8_t const*)m_texture_atlas->pixels;
 			src_pixel += 16 * (column.texture_id() % 16) + 16 * m_texture_atlas->pitch * (column.texture_id() / 16);
@@ -310,9 +313,9 @@ namespace reb {
 
 			int i_end = y_delta;
 			for(int i = 0; i < i_end; ++i, dst_pixel += dst->pitch) {
-				float z = 1. / (w_start + (i + .5f) * w_delta);
-				float u = z * (uw_start + (i + .5f) * uw_delta);
-				float v = z * (vw_start + (i + .5f) * vw_delta);
+				float z = 1. / (i * w_delta + w_start);
+				float u = z * (i * uw_delta + uw_start);
+				float v = z * (i * vw_delta + vw_start);
 
 				int u_offset = int(std::floor(16 * u)) & 15;
 				int v_offset = int(std::floor(16 * v)) & 15;
