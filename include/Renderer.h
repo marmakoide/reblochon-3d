@@ -31,6 +31,8 @@ namespace reb {
 			Column() :
 				m_y_start(0),
 				m_y_end(0),
+				m_z_start(0),
+				m_z_end(0),
 				m_u_start(0),
 				m_u_end(0),
 				m_v_start(0),
@@ -38,11 +40,14 @@ namespace reb {
 				m_texture_id(0) { }
 
 			Column(float y_start, float y_end,
+			       float z_start, float z_end,
 			       float u_start, float u_end,
 			       float v_start, float v_end,
 			       unsigned int texture_id) :
 				m_y_start(y_start),
 				m_y_end(y_end),
+				m_z_start(z_start),
+				m_z_end(z_end),
 				m_u_start(u_start),
 				m_u_end(u_end),
 				m_v_start(v_start),
@@ -57,6 +62,16 @@ namespace reb {
 			inline float
 			y_end() const {
 				return m_y_end;
+			}
+
+			inline float
+			z_start() const {
+				return m_z_start;
+			}
+
+			inline float
+			z_end() const {
+				return m_z_end;
 			}
 
 			inline float
@@ -88,19 +103,30 @@ namespace reb {
 			clip(float y_lo, float y_hi) {
 				float y_delta = m_y_end - m_y_start;
 
-				// Clip U texture coordinates
-				float u_delta = (m_u_end - m_u_start) / y_delta;
-				float u_start_clipped = m_u_start + u_delta * (y_lo - m_y_start);
-				float u_end_clipped   = m_u_start + u_delta * (y_hi - m_y_start);
-				m_u_start = u_start_clipped;
-				m_u_end = u_end_clipped;
+				// Clip Z
+				float w_start = 1. / m_z_start;
+				float w_end   = 1. / m_z_end;
+				float w_delta = (w_end - w_start) / y_delta;
+				float w_start_clipped = w_start + w_delta * (y_lo - m_y_start);
+				float w_end_clipped   = w_start + w_delta * (y_hi - m_y_start);
+				m_z_start = 1. / w_start_clipped;
+				m_z_end   = 1. / w_end_clipped;
 
-				// Clip V texture coordinates
-				float v_delta = (m_v_end - m_v_start) / y_delta;
-				float v_start_clipped = m_v_start + v_delta * (y_lo - m_y_start);
-				float v_end_clipped   = m_v_start + v_delta * (y_hi - m_y_start);
+				// Clip U texture coordinates, linear in 1/Z
+				float uw_start = w_start * m_u_start;
+				float uw_delta = (w_end * m_u_end - uw_start) / y_delta;
+				float u_start_clipped = (uw_start + uw_delta * (y_lo - m_y_start)) * m_z_start;
+				float u_end_clipped   = (uw_start + uw_delta * (y_hi - m_y_start)) * m_z_end;
+				m_u_start = u_start_clipped;
+				m_u_end   = u_end_clipped;
+
+				// Clip V texture coordinates, linear in 1/Z
+				float vw_start = w_start * m_v_start;
+				float vw_delta = (w_end * m_v_end - vw_start) / y_delta;
+				float v_start_clipped = (vw_start + vw_delta * (y_lo - m_y_start)) * m_z_start;
+				float v_end_clipped   = (vw_start + vw_delta * (y_hi - m_y_start)) * m_z_end;
 				m_v_start = v_start_clipped;
-				m_v_end = v_end_clipped;
+				m_v_end   = v_end_clipped;
 
 				// Update y_start and y_end
 				m_y_start = y_lo;
@@ -109,6 +135,7 @@ namespace reb {
 
 		private:
 			float m_y_start, m_y_end;
+			float m_z_start, m_z_end;
 			float m_u_start, m_u_end;
 			float m_v_start, m_v_end;
 			unsigned int m_texture_id;
@@ -183,11 +210,11 @@ namespace reb {
 
 						// Render the floor slice
 						if ((y_end > 0) and (y_start < m_h)) {
-							Column column(y_start, y_end, u_start, u_end, v_start, v_end, 16);
+							Column column(y_start, y_end, dist, prev_dist, u_start, u_end, v_start, v_end, 16);
 
 							column.clip(std::fmax(std::ceil(y_start - .5f), 0.f),
 								          std::fmin(std::ceil(y_end - .5f), m_h));
-							draw_column(dst, i, column);
+							draw_floor_column(dst, i, column);
 						}
 					}
 					// Generate a wall column
@@ -210,11 +237,11 @@ namespace reb {
 
 						// Render the wall slice
 						if ((y_end > 0) and (y_start < m_h)) {
-							Column column(y_start, y_end, u_start, u_end, v_start, v_end, 0);
+							Column column(y_start, y_end, prev_dist, prev_dist, u_start, u_end, v_start, v_end, 0);
 
 							column.clip(std::fmax(std::ceil(y_start - .5f), 0.f),
 								          std::fmin(std::ceil(y_end - .5f), m_h));
-							draw_column(dst, i, column);
+							draw_wall_column(dst, i, column);
 
 							// Done drawing
 							column_completed = true;
@@ -233,51 +260,62 @@ namespace reb {
 		}
 
 	private:
-		void 
-		draw_column(SDL_Surface* dst,
-		            int x, const Column& column) {
-			// Constant z column
-			if (column.u_end() == column.u_start()) {
-				float y_delta = column.y_end() - column.y_start();
-				float v_delta = (column.v_end() - column.v_start()) / y_delta;
+		// Draws a vertical column (ie. constant Z) with only U texture coordinate being interpolated
+		void
+		draw_wall_column(SDL_Surface* dst,
+		                 int x, const Column& column) {
+			float y_delta = column.y_end() - column.y_start();
+			float v_delta = (column.v_end() - column.v_start()) / y_delta;
 
-				int u_offset = int(16 * column.u_start()) % 16;
+			int u_offset = int(16 * column.u_start()) % 16;
 
-				uint8_t const* src_pixel = (uint8_t const*)m_texture_atlas->pixels;
-				src_pixel += 16 * (column.texture_id() % 16) + 16 * m_texture_atlas->pitch * (column.texture_id() / 16);
-				src_pixel += u_offset;
+			uint8_t const* src_pixel = (uint8_t const*)m_texture_atlas->pixels;
+			src_pixel += 16 * (column.texture_id() % 16) + 16 * m_texture_atlas->pitch * (column.texture_id() / 16);
+			src_pixel += u_offset;
 
-				uint8_t* dst_pixel = (uint8_t*)dst->pixels;
-				dst_pixel += ((int)std::floor(column.y_start())) * dst->pitch + x;
+			uint8_t* dst_pixel = (uint8_t*)dst->pixels;
+			dst_pixel += ((int)std::floor(column.y_start())) * dst->pitch + x;
 
-				int i_end = y_delta;
-				for(int i = 0; i < i_end; ++i, dst_pixel += dst->pitch) {
-					int v_offset = std::floor(16 * (v_delta * (i + .5f) + column.v_start()));
-					v_offset &= 15;
-					*dst_pixel = src_pixel[v_offset * m_texture_atlas->pitch];
-				}
+			int i_end = y_delta;
+			for(int i = 0; i < i_end; ++i, dst_pixel += dst->pitch) {
+				int v_offset = std::floor(16 * (v_delta * (i + .5f) + column.v_start()));
+				v_offset &= 15;
+				*dst_pixel = src_pixel[v_offset * m_texture_atlas->pitch];
 			}
-			else {
-				float y_delta = column.y_end() - column.y_start();
-				float u_delta = (column.u_end() - column.u_start()) / y_delta;
-				float v_delta = (column.v_end() - column.v_start()) / y_delta;
+		}
 
-				uint8_t const* src_pixel = (uint8_t const*)m_texture_atlas->pixels;
-				src_pixel += 16 * (column.texture_id() % 16) + 16 * m_texture_atlas->pitch * (column.texture_id() / 16);
+		// Draws an floor column
+		void 
+		draw_floor_column(SDL_Surface* dst,
+		                  int x, const Column& column) {
+			float y_delta = column.y_end() - column.y_start();
 
-				uint8_t* dst_pixel = (uint8_t*)dst->pixels;
-				dst_pixel += ((int)std::floor(column.y_start())) * dst->pitch + x;
+			float w_start = 1.f / column.z_start();
+			float w_delta = ((1.f / column.z_end()) - (1.f / column.z_start())) / y_delta;
 
-				int i_end = y_delta;
-				for(int i = 0; i < i_end; ++i, dst_pixel += dst->pitch) {
-					int u_offset = std::floor(16 * (u_delta * (i + .5f) + column.u_start()));
-					int v_offset = std::floor(16 * (v_delta * (i + .5f) + column.v_start()));
-					
-					u_offset &= 15;
-					v_offset &= 15;
+			float uw_start = column.u_start() / column.z_start();
+			float uw_delta = (column.u_end() / column.z_end() - column.u_start() / column.z_start()) / y_delta;
 
-					*dst_pixel = src_pixel[v_offset * m_texture_atlas->pitch + u_offset];
-				}
+			float vw_start = column.v_start() / column.z_start();
+			float vw_delta = (column.v_end() / column.z_end() - column.v_start() / column.z_start()) / y_delta;
+
+			uint8_t const* src_pixel = (uint8_t const*)m_texture_atlas->pixels;
+			src_pixel += 16 * (column.texture_id() % 16) + 16 * m_texture_atlas->pitch * (column.texture_id() / 16);
+
+			uint8_t* dst_pixel = (uint8_t*)dst->pixels;
+			dst_pixel += ((int)std::floor(column.y_start())) * dst->pitch + x;
+
+
+			int i_end = y_delta;
+			for(int i = 0; i < i_end; ++i, dst_pixel += dst->pitch) {
+				float w = w_start + (i + .5f) * w_delta;
+				float u = (uw_start + (i + .5f) * uw_delta) / w;
+				float v = (vw_start + (i + .5f) * vw_delta) / w;
+
+				int u_offset = int(std::floor(16 * u)) & 15;
+				int v_offset = int(std::floor(16 * v)) & 15;
+
+				*dst_pixel = src_pixel[v_offset * m_texture_atlas->pitch + u_offset];
 			}
 		}
 

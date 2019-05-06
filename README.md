@@ -12,7 +12,7 @@ The intention is to have a game engine as convenient as [love2d](https://love2d.
 
 ![screenshot of current state](splash.png)
 
-Current state: textured walls and floors, not perspective-correct for the floors, fixed height walls, editor does not edit anything.  
+Current state: perspective-correct textured walls and floors, fixed height walls, editor does not edit anything.
 
 ## Getting Started
 
