@@ -263,7 +263,9 @@ namespace reb {
 		draw_wall_column(SDL_Surface* dst,
 		                 int x, const Column& column) {
 			float y_delta = column.y_end() - column.y_start();
+
 			float v_delta = (column.v_end() - column.v_start()) / y_delta;
+			float v_start = column.v_start() + .5f * v_delta;
 
 			int u_offset = int(16 * column.u_start()) % 16;
 
@@ -276,7 +278,7 @@ namespace reb {
 
 			int i_end = y_delta;
 			for(int i = 0; i < i_end; ++i, dst_pixel += dst->pitch) {
-				float v = v_delta * (i + .5f) + column.v_start();
+				float v = i * v_delta + v_start;
 				int v_offset = int(std::floor(16 * v)) & 15;
 
 				*dst_pixel = src_pixel[v_offset * m_texture_atlas->pitch];
