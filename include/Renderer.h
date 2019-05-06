@@ -276,8 +276,9 @@ namespace reb {
 
 			int i_end = y_delta;
 			for(int i = 0; i < i_end; ++i, dst_pixel += dst->pitch) {
-				int v_offset = std::floor(16 * (v_delta * (i + .5f) + column.v_start()));
-				v_offset &= 15;
+				float v = v_delta * (i + .5f) + column.v_start();
+				int v_offset = int(std::floor(16 * v)) & 15;
+
 				*dst_pixel = src_pixel[v_offset * m_texture_atlas->pitch];
 			}
 		}
@@ -287,15 +288,16 @@ namespace reb {
 		draw_floor_column(SDL_Surface* dst,
 		                  int x, const Column& column) {
 			float y_delta = column.y_end() - column.y_start();
+			float inv_y_delta = 1.f / y_delta;
 
 			float w_start = 1.f / column.z_start();
-			float w_delta = ((1.f / column.z_end()) - (1.f / column.z_start())) / y_delta;
+			float w_delta = ((1.f / column.z_end()) - (1.f / column.z_start())) * inv_y_delta;
 
 			float uw_start = column.u_start() / column.z_start();
-			float uw_delta = (column.u_end() / column.z_end() - uw_start) / y_delta;
+			float uw_delta = (column.u_end() / column.z_end() - uw_start) * inv_y_delta;
 
 			float vw_start = column.v_start() / column.z_start();
-			float vw_delta = (column.v_end() / column.z_end() - vw_start) / y_delta;
+			float vw_delta = (column.v_end() / column.z_end() - vw_start) * inv_y_delta;
 
 			uint8_t const* src_pixel = (uint8_t const*)m_texture_atlas->pixels;
 			src_pixel += 16 * (column.texture_id() % 16) + 16 * m_texture_atlas->pitch * (column.texture_id() / 16);
