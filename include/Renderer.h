@@ -14,7 +14,7 @@ namespace reb {
 	public:
 		Renderer(int w,
 		         int h,
-							SDL_Surface* texture_atlas,
+						 SDL_Surface* texture_atlas,
 		         float focal_length) :
 			m_w(w),
 			m_h(h),
@@ -153,13 +153,12 @@ namespace reb {
 			Eigen::Matrix2f rot_offset;
 			rot_offset = Eigen::Rotation2Df(angle);
 
-			Grid2d grid(Eigen::Vector2i(map.w(), map.h()), 1.);
+			Grid2d grid(Eigen::Vector2i(map.cell_array().w(), map.cell_array().h()), 1.);
 
 			// Clear the surface
 			SDL_FillRect(dst, NULL, 149);
 
 			// Setup constants
-			float wall_height = 2.5f;
 			float view_height = pos.z();
 
 			// For each column
@@ -180,7 +179,8 @@ namespace reb {
 					float dist = traversal.distance(); 
 					int axis = traversal.axis();
 
-					if (map(traversal.i(), traversal.j()) == 0) {
+					const Map::Cell& cell = map.cell_array()(traversal.i(), traversal.j());
+					if (cell.height() == 0) {
 						// Generate a floor column
 						float y_start = 0;
 						float y_end = 0;
@@ -208,7 +208,7 @@ namespace reb {
 
 						// Render the floor slice
 						if ((y_end > 0) and (y_start < m_h)) {
-							Column column(y_start, y_end, dist, prev_dist, u_start, u_end, v_start, v_end, 16);
+							Column column(y_start, y_end, dist, prev_dist, u_start, u_end, v_start, v_end, cell.floor_texture_id() & 0xff);
 
 							column.clip(std::fmax(std::ceil(y_start - .5f), 0.f),
 								          std::fmin(std::ceil(y_end - .5f), m_h));
@@ -218,7 +218,7 @@ namespace reb {
 					// Generate a wall column
 					else {
 						// Compute the wall slice
-						float y_start = wall_height;
+						float y_start = cell.height() / 256.f;
 						float y_end   = 0;
 
 						float u_start = pos_offset[1 - prev_axis] + prev_dist * ray_dir[1 - prev_axis];
@@ -226,7 +226,7 @@ namespace reb {
 						float u_end = u_start;
 
 						float v_start = 0;
-						float v_end   = wall_height;
+						float v_end   = cell.height() / 256.f;
 
 						// Projection to screen space
 						float k = -ray_norm / prev_dist; 
@@ -235,7 +235,7 @@ namespace reb {
 
 						// Render the wall slice
 						if ((y_end > 0) and (y_start < m_h)) {
-							Column column(y_start, y_end, prev_dist, prev_dist, u_start, u_end, v_start, v_end, 0);
+							Column column(y_start, y_end, prev_dist, prev_dist, u_start, u_end, v_start, v_end, cell.wall_texture_id() & 0xff);
 
 							column.clip(std::fmax(std::ceil(y_start - .5f), 0.f),
 								          std::fmin(std::ceil(y_end - .5f), m_h));

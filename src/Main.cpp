@@ -1,4 +1,5 @@
 #include <SDL.h>
+#include "Map.h"
 #include "LoadPNG.h"
 #include "Renderer.h"
 #include "Macros.h"
@@ -21,14 +22,16 @@ load_map(const char* path, Map& map) {
 	map = Map(src->w, src->h);
 
 	// Setup map elements
-	std::fill(map.data().begin(), map.data().end(), 0);
-
 	uint8_t const* scanline = (uint8_t const*)src->pixels;
 	for(int i = 0; i < src->h; ++i, scanline += src->pitch)
 		for(int j = 0; j < src->w; ++j) {
+			Map::Cell& cell = map.cell_array()(j, i);
+			cell.wall_texture_id() = 0;
+			cell.floor_texture_id() = 16;
+
 			switch(scanline[j]) {
 				case 63:
-					map(j, i) = 1;
+					cell.height() = 640;
 					break;
 				default:
 					break;
