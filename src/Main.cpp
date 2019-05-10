@@ -3,6 +3,7 @@
 #include "LoadPNG.h"
 #include "Renderer.h"
 #include "Macros.h"
+#include "cxxopts.h"
 
 using namespace reb;
 
@@ -68,15 +69,69 @@ private:
 
 
 
+
+// --- Command-line parsing ---------------------------------------------------
+
+struct Settings {
+	Settings() :
+		fullscreen(false) { }
+
+	std::string path;
+	bool fullscreen;
+}; // struct Settings
+
+
+
+void
+parse(int argc, char* argv[], Settings& settings) {
+	try {
+		cxxopts::Options options(argv[0], " - reblochon-3d map editor");
+		options
+			.allow_unrecognised_options()
+			.add_options()
+      ("f, fullscreen", "fullscreen display mode", cxxopts::value<bool>(settings.fullscreen))
+			("i, input", "Input", cxxopts::value<std::string>(), "FILE")
+			("help", "Print help")
+		;
+		options.parse_positional({"input"});
+
+		auto result = options.parse(argc, argv);
+		if (result.count("help")) {
+			std::cerr << options.help({""}) << std::endl;
+      exit(EXIT_SUCCESS);
+		}
+
+		if (result.count("input"))
+			settings.path = result["input"].as<std::string>();
+		else {
+			std::cerr << "no path to a map file provided" << std::endl;
+			exit(EXIT_FAILURE);
+		}
+	}
+	catch (const cxxopts::OptionException& e) {
+		std::cerr << "error parsing options: " << e.what() << std::endl;
+		exit(EXIT_FAILURE);
+	}
+}
+
+
+
+// --- Main entry point -------------------------------------------------------
+
 int
-main(int UNUSED_PARAM(argc), char** UNUSED_PARAM(argv)) {
+main(int argc, char* argv[]) {
+	// Command-line parsing
+	Settings settings;
+	parse(argc, argv, settings);
+
+	//
 	State state;
 	state.set((M_PI / 180.f) * 30.f, Eigen::Vector3f(4.5f, 4.5f, 1.7f));
 
 	// Map loading
 	Map map;
-	if (!Map::load("out.map", map)) {
-		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not load map: %s\n", SDL_GetError());
+	if (!Map::load(settings.path.c_str(), map)) {
+		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not load map '%s': %s\n", settings.path.c_str(), SDL_GetError());
 		return EXIT_FAILURE;
 	}
 
@@ -99,7 +154,11 @@ main(int UNUSED_PARAM(argc), char** UNUSED_PARAM(argv)) {
 	                       Renderer::focal_length_from_angle((M_PI / 180.f) * 60.f));
 
 	// Create a window
-	SDL_Window* window = SDL_CreateWindow("reblochon-3d editor", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, 0);
+	Uint32 window_flags = 0;
+	if (settings.fullscreen)
+		window_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+
+	SDL_Window* window = SDL_CreateWindow("reblochon-3d editor", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, window_flags);
 	if (!window) {
 		SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "Could not create window: %s\n", SDL_GetError());
 		SDL_FreeSurface(texture_atlas);
