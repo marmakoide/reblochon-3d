@@ -22,6 +22,56 @@ Current state: perspective-correct textured walls and floors, fixed height walls
 * The build system assumes you have Python 2.7 or later installed. 
 * *reblochon-3d* compiles with GCC 6 on Linux.
 
+### Build
+
+The build system, [waf](https://waf.io), is part of the source tree. You first 
+run the configuration step, that will check that your environment fullfill all 
+the requirements for the build
+
+```
+./waf configure
+```
+
+Then, you can proceed to build
+
+```
+./waf
+```
+
+### Starting the map editor
+
+For now, you have to start the editor from the main directory
+
+```
+./build/reblochon-editor data/test.map 
+
+```
+
+## Using the map editor
+
+At the moment the editor only allows to move around a map, no edit operations
+have been implemented yet.
+
+* Left key : rotate view on the left
+* Right key : rotate view on the left
+* Up key : move forward
+* Down key : move backward
+
+The map to edit is passed through the command line
+
+```
+./build/reblochon-editor data/test.map 
+
+```
+
+By default, the editor runs in windowed mode. You can start in fullscreen mode
+as following
+
+```
+./build/reblochon-editor --fullscreen data/test.map 
+
+```
+
 ## Authors
 
 * **Alexandre Devert** - *Initial work* - [marmakoide](https://github.com/marmakoide)
