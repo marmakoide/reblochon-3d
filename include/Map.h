@@ -67,6 +67,8 @@ namespace reb {
 			return m_cell_array;
 		}
 
+		static bool load(const char* path, Map& map);
+
 	private:
 		cell_array_type m_cell_array;
 	}; // class Map

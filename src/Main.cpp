@@ -11,40 +11,6 @@ const unsigned int SCREEN_HEIGHT = 480;
 
 
 
-bool
-load_map(const char* path, Map& map) {
-	// Load source picture
-	SDL_Surface* src = load_png(path);
-	if (!src)
-		return false;
-
-	// Setup map size
-	map = Map(src->w, src->h);
-
-	// Setup map elements
-	uint8_t const* scanline = (uint8_t const*)src->pixels;
-	for(int i = 0; i < src->h; ++i, scanline += src->pitch)
-		for(int j = 0; j < src->w; ++j) {
-			Map::Cell& cell = map.cell_array()(j, i);
-			cell.wall_texture_id() = 0;
-			cell.floor_texture_id() = 16;
-
-			switch(scanline[j]) {
-				case 63:
-					cell.height() = 640;
-					break;
-				default:
-					break;
-			}
-		}
-
-	// Job done
-	SDL_FreeSurface(src);
-	return true;
-}
-
-
-
 class State {
 public:
 	State() :
@@ -109,7 +75,7 @@ main(int UNUSED_PARAM(argc), char** UNUSED_PARAM(argv)) {
 
 	// Map loading
 	Map map;
-	if (!load_map("./data/test.png", map)) {
+	if (!Map::load("out.map", map)) {
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not load map: %s\n", SDL_GetError());
 		return EXIT_FAILURE;
 	}

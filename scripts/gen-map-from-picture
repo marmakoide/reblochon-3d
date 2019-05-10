@@ -1,0 +1,100 @@
+#!/usr/bin/env python3
+
+import sys
+import png
+import argparse
+
+
+
+class Cell:
+	def __init__(self):
+		self.height = 0
+		self.wall_texture_id = 0
+		self.floor_texture_id = 16
+
+
+
+class Map:
+	def __init__(self, w, h):
+		self.w = w
+		self.h = h
+		self.cell_array = [[Cell() for j in range(w)] for i in range(h)]
+
+
+
+def load_input_picture(path):
+	# Load the input image
+	reader = png.Reader(path)
+	img_w, img_h, pixels, img_data = reader.read()
+	
+	# Check the input image format
+	if img_data['bitdepth'] != 8:
+		raise RuntimeError('Only 8 bits depths images are supported')
+
+	if img_data['planes'] != 1:
+		raise RuntimeError('Only single planes images are supported')
+
+	# Job done
+	return img_w, img_h, tuple(pixels)
+
+
+
+def generate_map(img_w, img_h, img_pixels):
+	ret = Map(img_w, img_h)
+	for i, pixel_row in enumerate(img_pixels):
+		for j, pixel in enumerate(pixel_row):
+			cell = ret.cell_array[i][j]
+			if pixel == 63:
+				cell.height = 640
+
+	return ret
+
+
+
+def save_map(path, map_obj):
+	signature = 'reblochon3d-map'
+	format_version_number = 1
+
+	# Write the output
+	with open(path, 'wb') as f:
+		# Write the header
+		f.write(signature.encode('ascii'))
+		f.write(format_version_number.to_bytes(4, byteorder = 'little', signed = False))
+
+		# Write the size
+		f.write(map_obj.w.to_bytes(2, byteorder = 'little', signed = False))
+		f.write(map_obj.h.to_bytes(2, byteorder = 'little', signed = False))
+		
+		# Write each cell
+		for cell_row in map_obj.cell_array:
+			for cell in cell_row:
+				f.write(cell.height.to_bytes(4, byteorder = 'little', signed = False))
+				f.write(cell.wall_texture_id.to_bytes(1, byteorder = 'little', signed = False))
+				f.write(cell.floor_texture_id.to_bytes(1, byteorder = 'little', signed = False))
+
+
+
+def main():
+	# Command line
+	parser = argparse.ArgumentParser(description = 'Generate a map for reblochon-3d from a PNG picture')
+	parser.add_argument('input_path', help='Path to PNG picture (8 bits indexed color)')
+	parser.add_argument('output_path', help='Path to output file')
+	args = parser.parse_args()
+
+	# Load the input picture
+	try:
+		img_w, img_h, img_pixels = load_input_picture(args.input_path)
+	except RuntimeError as e:
+		sys.stderr.write('%s\n' % str(e))
+		return
+	except IOError as e:
+		sys.stderr.write('%s\n' % str(e))
+		return
+
+	# Generate and write the map
+	save_map(args.output_path, generate_map(img_w, img_h, img_pixels))
+
+
+
+if __name__ == "__main__":
+	main()
