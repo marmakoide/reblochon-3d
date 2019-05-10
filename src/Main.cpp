@@ -90,10 +90,9 @@ parse(int argc, char* argv[], Settings& settings) {
 			.allow_unrecognised_options()
 			.add_options()
       ("f, fullscreen", "fullscreen display mode", cxxopts::value<bool>(settings.fullscreen))
-			("i, input", "Input", cxxopts::value<std::string>(), "FILE")
+			("i, input", "path to the map to open", cxxopts::value<std::string>(), "FILE")
 			("help", "Print help")
 		;
-		options.parse_positional({"input"});
 
 		auto result = options.parse(argc, argv);
 		if (result.count("help")) {
@@ -103,10 +102,6 @@ parse(int argc, char* argv[], Settings& settings) {
 
 		if (result.count("input"))
 			settings.path = result["input"].as<std::string>();
-		else {
-			std::cerr << "no path to a map file provided" << std::endl;
-			exit(EXIT_FAILURE);
-		}
 	}
 	catch (const cxxopts::OptionException& e) {
 		std::cerr << "error parsing options: " << e.what() << std::endl;
@@ -130,9 +125,14 @@ main(int argc, char* argv[]) {
 
 	// Map loading
 	Map map;
-	if (!Map::load(settings.path.c_str(), map)) {
-		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not load map '%s': %s\n", settings.path.c_str(), SDL_GetError());
-		return EXIT_FAILURE;
+	if (!settings.path.empty()) {
+		if (!Map::load(settings.path.c_str(), map)) {
+			SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not load map '%s': %s\n", settings.path.c_str(), SDL_GetError());
+			return EXIT_FAILURE;
+		}
+	}
+	else {
+		map = Map(16, 16);
 	}
 
 	// SDL initialization

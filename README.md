@@ -60,15 +60,17 @@ have been implemented yet.
 The map to edit is passed through the command line
 
 ```
-./build/reblochon-editor data/test.map 
+./build/reblochon-editor -i data/test.map 
 
 ```
+
+If no map is specified, an empty 16x16 map will be created.
 
 By default, the editor runs in windowed mode. You can start in fullscreen mode
 as following
 
 ```
-./build/reblochon-editor --fullscreen data/test.map 
+./build/reblochon-editor --fullscreen -i data/test.map 
 
 ```
 
