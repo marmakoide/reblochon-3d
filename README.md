@@ -56,6 +56,8 @@ have been implemented yet.
 * Right key : rotate view on the left
 * Up key : move forward
 * Down key : move backward
+* Space bar : move up
+* Left shift key : move down
 * Escape key : close the editor
 
 The map to edit is passed through the command line
