@@ -2,6 +2,7 @@
 
 import sys
 import png
+import math
 import argparse
 
 
@@ -19,6 +20,7 @@ class Map:
 		self.w = w
 		self.h = h
 		self.cell_array = [[Cell() for j in range(w)] for i in range(h)]
+		self.spawn_point = (128, 128)
 
 
 
@@ -40,13 +42,19 @@ def load_input_picture(path):
 
 
 def generate_map(img_w, img_h, img_pixels):
+	# Create a map instance
 	ret = Map(img_w, img_h)
+
+	# Scan the pixels
 	for i, pixel_row in enumerate(img_pixels):
 		for j, pixel in enumerate(pixel_row):
 			cell = ret.cell_array[i][j]
-			if pixel == 63:
+			if pixel == 1:
+				ret.spawn_point = (256 * j + 127 - 128 * img_w, 256 * i + 127 - 128 * img_h)
+			elif pixel == 63:
 				cell.height = 640
 
+	# Job done
 	return ret
 
 
@@ -54,6 +62,8 @@ def generate_map(img_w, img_h, img_pixels):
 def save_map(path, map_obj):
 	signature = 'reblochon3d-map'
 	format_version_number = 1
+	spawn_tag = 'spawn'
+	map_tag = '_map_'
 
 	# Write the output
 	with open(path, 'wb') as f:
@@ -61,11 +71,15 @@ def save_map(path, map_obj):
 		f.write(signature.encode('ascii'))
 		f.write(format_version_number.to_bytes(4, byteorder = 'little', signed = False))
 
-		# Write the size
+		# Write the spawn point coordinates
+		f.write(spawn_tag.encode('ascii'))
+		f.write(map_obj.spawn_point[0].to_bytes(4, byteorder = 'little', signed = True))
+		f.write(map_obj.spawn_point[1].to_bytes(4, byteorder = 'little', signed = True))
+
+		# Write the map data
+		f.write(map_tag.encode('ascii'))
 		f.write(map_obj.w.to_bytes(2, byteorder = 'little', signed = False))
 		f.write(map_obj.h.to_bytes(2, byteorder = 'little', signed = False))
-		
-		# Write each cell
 		for cell_row in map_obj.cell_array:
 			for cell in cell_row:
 				f.write(cell.height.to_bytes(4, byteorder = 'little', signed = False))

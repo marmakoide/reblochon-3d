@@ -119,10 +119,6 @@ main(int argc, char* argv[]) {
 	Settings settings;
 	parse(argc, argv, settings);
 
-	//
-	State state;
-	state.set((M_PI / 180.f) * 30.f, Eigen::Vector3f(4.5f, 4.5f, 1.7f));
-
 	// Map loading
 	Map map;
 	if (!settings.path.empty()) {
@@ -134,6 +130,10 @@ main(int argc, char* argv[]) {
 	else {
 		map = Map(16, 16);
 	}
+
+	//
+	State state;
+	state.set((M_PI / 180.f) * 30.f, Eigen::Vector3f(map.spawn_point().x(), map.spawn_point().y(), 1.7f));
 
 	// SDL initialization
 	if (SDL_Init(SDL_INIT_VIDEO)) {

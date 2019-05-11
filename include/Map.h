@@ -2,6 +2,7 @@
 #define REBLOCHON_MAP_H
 
 #include <cstdint>
+#include <Eigen/Dense>
 #include "Array2dT.h"
 
 
@@ -57,6 +58,16 @@ namespace reb {
 
 		Map(int w, int h);
 
+		inline const Eigen::Vector2f&
+		spawn_point() const {
+			return m_spawn_point;
+		}
+
+		inline Eigen::Vector2f&
+		spawn_point() {
+			return m_spawn_point;
+		}
+
 		inline const cell_array_type&
 		cell_array() const {
 			return m_cell_array;
@@ -70,6 +81,7 @@ namespace reb {
 		static bool load(const char* path, Map& map);
 
 	private:
+		Eigen::Vector2f m_spawn_point;
 		cell_array_type m_cell_array;
 	}; // class Map
 } // namespace reb
