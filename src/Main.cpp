@@ -51,6 +51,16 @@ public:
 	}
 
 	void
+	move_up() {
+		m_pos.z() += 0.1f;
+	}
+
+	void
+	move_down() {
+		m_pos.z() -= 0.1f;
+	}
+
+	void
 	rotate_left() {
 		m_angle += m_angle_delta;
 	}
@@ -217,6 +227,14 @@ main(int argc, char* argv[]) {
 
 						case SDLK_RIGHT:
 							state.rotate_right();
+							break;
+
+						case SDLK_SPACE:
+							state.move_up();
+							break;
+
+						case SDLK_LSHIFT:
+							state.move_down();
 							break;
 
 						default:
