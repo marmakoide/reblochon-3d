@@ -199,6 +199,10 @@ main(int argc, char* argv[]) {
 
 				case SDL_KEYDOWN:
 					switch(event.key.keysym.sym) {
+						case SDLK_ESCAPE:
+							quit = true;
+							break;
+
 						case SDLK_UP:
 							state.move_forward();
 							break;
