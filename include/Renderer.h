@@ -5,13 +5,13 @@
 #include "Map.h"
 #include "RayTraversal.h"
 #include <list>
-#include <iostream>
 
 
 
 namespace reb {
 	class Renderer {
 	public:
+		// Represents a piece of vertical column to be rendered
 		class Column {
 		public:
 			Column();
@@ -80,6 +80,31 @@ namespace reb {
 
 
 
+		// Represents a full column of the screen
+		class CoverageBuffer {
+		public:
+			typedef std::list<Column> column_list_type;
+
+
+
+			CoverageBuffer(int size);
+
+			inline const column_list_type&
+			column_list() const {
+				return m_column_list;
+			}
+
+			void clear();
+
+			void add(Column& column);
+
+		private:
+			int m_size;
+			column_list_type m_column_list;
+		}; // class CoverageBuffer
+
+
+
 		Renderer(int w, int h,
 						 SDL_Surface* texture_atlas,
 		         float focal_length);
@@ -93,7 +118,17 @@ namespace reb {
 		static float focal_length_from_angle(float angle);
 
 	private:
-		void draw_wall_column(SDL_Surface* dst, int x, const Column& column) ;
+		void fill_coverage_buffer(CoverageBuffer& coverage_buffer,
+		                          const Map& map,
+                              const Grid2d& grid,
+		                          const Eigen::Vector2f& ray_pos,
+                              const Eigen::Vector2f& ray_dir,
+		                          float ray_norm,
+                              float view_height);
+
+		void draw_column(SDL_Surface* dst, int x, const Column& column);
+
+		void draw_wall_column(SDL_Surface* dst, int x, const Column& column);
 
 		void draw_floor_column(SDL_Surface* dst, int x, const Column& column);
 

@@ -5,6 +5,8 @@ using namespace reb;
 
 
 
+// --- Renderer::Column -------------------------------------------------------
+
 Renderer::Column::Column() :
 	m_y_start(0),
 	m_y_end(0),
@@ -69,6 +71,38 @@ Renderer::Column::clip(float y_lo, float y_hi) {
 
 
 
+// --- Renderer::CoverageBuffer -----------------------------------------------
+
+Renderer::CoverageBuffer::CoverageBuffer(int size) :
+	m_size(size) { }
+
+
+
+void
+Renderer::CoverageBuffer::add(Column& column) {
+	// If the column fragment is within the viewport
+	if ((column.y_end() > 0) and (column.y_start() < m_size)) {
+		// Clip the column fragment to the viewport
+		column.clip(std::fmax(std::ceil(column.y_start() - .5f), 0.f),
+								std::fmin(std::ceil(column.y_end() - .5f), m_size));
+
+		// Add the column fragment
+		m_column_list.push_back(column);
+	}
+}
+
+
+
+void
+Renderer::CoverageBuffer::clear() {
+	m_column_list.clear();
+}
+
+
+
+
+// --- Renderer ---------------------------------------------------------------
+
 Renderer::Renderer(int w,
 		               int h,
 						       SDL_Surface* texture_atlas,
@@ -104,114 +138,132 @@ Renderer::setup() {
 
 
 void
+Renderer::fill_coverage_buffer(CoverageBuffer& coverage_buffer,
+                        const Map& map,
+                        const Grid2d& grid,
+		                    const Eigen::Vector2f& ray_pos,
+                        const Eigen::Vector2f& ray_dir,
+                        float ray_norm,
+                        float view_height) {
+	bool column_completed = false;
+
+	// Ray/grid intersection setup
+	RayTraversal traversal(grid, ray_pos, ray_dir);
+	float prev_dist = traversal.distance_init();
+	float prev_axis = traversal.axis();
+
+	// For each intersection found with the grid
+	for( ; traversal.has_next() and !column_completed; traversal.next()) {
+		float dist = traversal.distance(); 
+		int axis = traversal.axis();
+
+		const Map::Cell& cell = map.cell_array()(traversal.i(), traversal.j());
+		if (cell.height() == 0) {
+			// Generate a floor column
+			float y_start = 0;
+			float y_end = 0;
+
+			float u_start, v_start;
+			u_start = ray_pos[1-axis] + dist * ray_dir[1-axis];
+			u_start = u_start - std::floor(u_start);
+			v_start = ray_dir[axis] > 0 ? 1 : 0;
+			if (axis == 1)
+				std::swap(u_start, v_start);			
+					
+			float u_end, v_end;
+			u_end = ray_pos[1-prev_axis] + prev_dist * ray_dir[1-prev_axis];
+			u_end = u_end - std::floor(u_end);
+			v_end = ray_dir[prev_axis] > 0 ? 0 : 1;
+			if (prev_axis == 1)
+				std::swap(u_end, v_end);
+
+			// Projection to screen space
+			float k = -ray_norm / prev_dist; 
+			y_end = m_h * (k * (y_end - view_height) + .5f);
+
+			k = -ray_norm / dist; 
+			y_start   = m_h * (k * (y_start - view_height) + .5f); 
+
+			// Add the column fragment
+			Column column(y_start, y_end, dist, prev_dist, u_start, u_end, v_start, v_end, cell.floor_texture_id() & 0xff);
+			coverage_buffer.add(column);
+		}
+		// Generate a wall column
+		else {
+			// Compute the wall slice
+			float y_start = cell.height() / 256.f;
+			float y_end   = 0;
+
+			float u_start = ray_pos[1 - prev_axis] + prev_dist * ray_dir[1 - prev_axis];
+			u_start -= std::floor(u_start);
+			float u_end = u_start;
+
+			float v_start = 0;
+			float v_end   = cell.height() / 256.f;
+
+			// Projection to screen space
+			float k = -ray_norm / prev_dist; 
+			y_start = m_h * (k * (y_start - view_height) + .5f); 
+			y_end   = m_h * (k * (y_end   - view_height) + .5f); 
+
+			// Add the column fragment
+			Column column(y_start, y_end, prev_dist, prev_dist, u_start, u_end, v_start, v_end, cell.wall_texture_id() & 0xff);
+			coverage_buffer.add(column);
+
+			// Done drawing
+			column_completed = true;
+		}
+
+		prev_axis = axis;
+		prev_dist = dist;
+	}
+}
+
+
+
+void
 Renderer::render(SDL_Surface* dst,
 		             const Map& map,
 					       float angle,
 		             const Eigen::Vector3f& pos) {
+	Grid2d grid(Eigen::Vector2i(map.cell_array().w(), map.cell_array().h()), 1.);
+
 	// Get 2d position offset
-	Eigen::Vector2f pos_offset = pos.head(2);
+	Eigen::Vector2f ray_pos = pos.head(2);
 
 	// Compute rotation matrix
 	Eigen::Matrix2f rot_offset;
 	rot_offset = Eigen::Rotation2Df(angle);
 
-	Grid2d grid(Eigen::Vector2i(map.cell_array().w(), map.cell_array().h()), 1.);
-
 	// Clear the surface
 	SDL_FillRect(dst, NULL, 149);
 
-	// Setup constants
-	float view_height = pos.z();
-
 	// For each column
+	CoverageBuffer coverage_buffer(m_h);
 	for(int i = 0; i < m_w; ++i) {
 		// Compute ray direction
 		float ray_norm = m_ray_direction_list(i, 2);
 		Eigen::Vector2f ray_dir = m_ray_direction_list.row(i).head(2);
 		ray_dir = rot_offset * ray_dir;
-				
-		// Cast a ray
-		bool column_completed = false;
+		
+		// Compute all the column fragments to render
+		coverage_buffer.clear();
+		fill_coverage_buffer(coverage_buffer, map, grid, ray_pos, ray_dir, ray_norm, pos.z());
 
-		RayTraversal traversal(grid, pos_offset, ray_dir);
-		float prev_dist = traversal.distance_init();
-		float prev_axis = traversal.axis();
-
-		for( ; traversal.has_next() and !column_completed; traversal.next()) {
-			float dist = traversal.distance(); 
-			int axis = traversal.axis();
-
-			const Map::Cell& cell = map.cell_array()(traversal.i(), traversal.j());
-			if (cell.height() == 0) {
-				// Generate a floor column
-				float y_start = 0;
-				float y_end = 0;
-
-				float u_start, v_start;
-				u_start = pos_offset[1-axis] + dist * ray_dir[1-axis];
-				u_start = u_start - std::floor(u_start);
-				v_start = ray_dir[axis] > 0 ? 1 : 0;
-				if (axis == 1)
-					std::swap(u_start, v_start);			
-					
-				float u_end, v_end;
-				u_end = pos_offset[1-prev_axis] + prev_dist * ray_dir[1-prev_axis];
-				u_end = u_end - std::floor(u_end);
-				v_end = ray_dir[prev_axis] > 0 ? 0 : 1;
-				if (prev_axis == 1)
-					std::swap(u_end, v_end);
-
-				// Projection to screen space
-				float k = -ray_norm / prev_dist; 
-				y_end = m_h * (k * (y_end - view_height) + .5f);
-
-				k = -ray_norm / dist; 
-				y_start   = m_h * (k * (y_start - view_height) + .5f); 
-
-				// Render the floor slice
-				if ((y_end > 0) and (y_start < m_h)) {
-					Column column(y_start, y_end, dist, prev_dist, u_start, u_end, v_start, v_end, cell.floor_texture_id() & 0xff);
-
-					column.clip(std::fmax(std::ceil(y_start - .5f), 0.f),
-								      std::fmin(std::ceil(y_end - .5f), m_h));
-						draw_floor_column(dst, i, column);
-				}
-			}
-			// Generate a wall column
-			else {
-				// Compute the wall slice
-				float y_start = cell.height() / 256.f;
-				float y_end   = 0;
-
-				float u_start = pos_offset[1 - prev_axis] + prev_dist * ray_dir[1 - prev_axis];
-				u_start -= std::floor(u_start);
-				float u_end = u_start;
-
-				float v_start = 0;
-				float v_end   = cell.height() / 256.f;
-
-				// Projection to screen space
-				float k = -ray_norm / prev_dist; 
-				y_start = m_h * (k * (y_start - view_height) + .5f); 
-				y_end   = m_h * (k * (y_end   - view_height) + .5f); 
-
-				// Render the wall slice
-				if ((y_end > 0) and (y_start < m_h)) {
-					Column column(y_start, y_end, prev_dist, prev_dist, u_start, u_end, v_start, v_end, cell.wall_texture_id() & 0xff);
-
-					column.clip(std::fmax(std::ceil(y_start - .5f), 0.f),
-								      std::fmin(std::ceil(y_end - .5f), m_h));
-					draw_wall_column(dst, i, column);
-
-					// Done drawing
-					column_completed = true;
-				}
-			}
-
-			prev_axis = axis;
-			prev_dist = dist;
-		}
+		// Render the column fragments
+		for(const Column& column : coverage_buffer.column_list())
+			draw_column(dst, i, column);
 	}
+}
+
+
+
+void
+Renderer::draw_column(SDL_Surface* dst, int x, const Column& column) {
+	if (column.z_start() == column.z_end())
+		draw_wall_column(dst, x, column);
+	else
+		draw_floor_column(dst, x, column);
 }
 
 
