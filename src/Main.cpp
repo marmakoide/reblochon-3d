@@ -196,6 +196,12 @@ main(int argc, char* argv[]) {
 		                     0x00000000);
 	SDL_SetSurfacePalette(indexed_color_framebuffer, texture_atlas->format->palette);
 
+	SDL_Rect dst_rect;
+	dst_rect.x = std::max(0, (framebuffer->w - indexed_color_framebuffer->w) / 2);
+	dst_rect.y = std::max(0, (framebuffer->h - indexed_color_framebuffer->h) / 2);
+	dst_rect.w = indexed_color_framebuffer->w;
+	dst_rect.h = indexed_color_framebuffer->h;
+
 	// Event processing & display loop
 	bool quit = false; 
 	while(!quit) {
@@ -249,7 +255,7 @@ main(int argc, char* argv[]) {
 
 		// Update the display
 		view_renderer.render(indexed_color_framebuffer, map, state.angle(), state.pos());
-		SDL_BlitSurface(indexed_color_framebuffer, NULL, framebuffer, NULL);
+		SDL_BlitSurface(indexed_color_framebuffer, NULL, framebuffer, &dst_rect);
 		SDL_UpdateWindowSurface(window);
 
 		// Sleep for a while
