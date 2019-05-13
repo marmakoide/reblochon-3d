@@ -9,6 +9,39 @@
 
 
 namespace reb {
+	// Represents the integer range [start, end[
+	class IntegerRange {
+	public:
+		inline IntegerRange() :
+			m_start(0),
+			m_end(0) { }
+
+		inline IntegerRange(int start, int end) :
+			m_start(start),
+			m_end(end) { }
+
+		inline IntegerRange(const IntegerRange& other) :
+			m_start(other.m_start),
+			m_end(other.m_end) { }
+
+		inline IntegerRange& operator = (const IntegerRange& other) {
+			m_start = other.m_start;
+			m_end = other.m_end;
+			return *this;
+		}
+
+		inline int start() const { return m_start; }
+
+		inline int end() const { return m_end; }
+
+		inline int length() const { return m_start - m_end; }
+
+	private:
+		int m_start, m_end;
+	}; // class IntegerRange
+
+
+
 	class Renderer {
 	public:
 		// Represents a piece of vertical column to be rendered
@@ -84,6 +117,7 @@ namespace reb {
 		class CoverageBuffer {
 		public:
 			typedef std::list<Column> column_list_type;
+			typedef std::list<IntegerRange> integer_range_list_type;
 
 
 
@@ -101,6 +135,7 @@ namespace reb {
 		private:
 			int m_size;
 			column_list_type m_column_list;
+			integer_range_list_type m_unoccluded_range_list;
 		}; // class CoverageBuffer
 
 

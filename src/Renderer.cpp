@@ -74,20 +74,67 @@ Renderer::Column::clip(float y_lo, float y_hi) {
 // --- Renderer::CoverageBuffer -----------------------------------------------
 
 Renderer::CoverageBuffer::CoverageBuffer(int size) :
-	m_size(size) { }
+	m_size(size) {
+	m_unoccluded_range_list.push_back(IntegerRange(0, m_size));
+}
 
 
 
 void
 Renderer::CoverageBuffer::add(Column& column) {
-	// If the column fragment is within the viewport
-	if ((column.y_end() > 0) and (column.y_start() < m_size)) {
-		// Clip the column fragment to the viewport
-		column.clip(std::fmax(std::ceil(column.y_start() - .5f), 0.f),
-								std::fmin(std::ceil(column.y_end() - .5f), m_size));
+	// If the column fragment is not within the viewport, we ignore it
+	if ((column.y_end() <= 0) or (column.y_start() >= m_size))
+		return;
 
-		// Add the column fragment
-		m_column_list.push_back(column);
+	// Compute the integer range of the column
+	IntegerRange column_range(
+		(int)std::ceil(column.y_start() - .5f),
+		(int)std::ceil(column.y_end()   - .5f));
+
+	// Split and clip the non-occluded parts of the column fragment
+	for(const IntegerRange& range : m_unoccluded_range_list) {
+		if ((range.end() > column_range.start()) and (range.start() < column_range.end())) {
+			Column clipped_column = column;
+			clipped_column.clip(
+				std::max(range.start(), column_range.start()),
+				std::min(range.end(), column_range.end()));
+			m_column_list.push_back(clipped_column);
+		}
+	}
+	
+	/*
+	  Update the list of non-occluded ranges
+	 */
+
+	integer_range_list_type updated_unoccluded_range_list;
+
+	{
+		integer_range_list_type::const_iterator it = m_unoccluded_range_list.begin();
+
+		// Keep anything before the column range
+		for( ; it != m_unoccluded_range_list.end(); ++it)
+			if ((*it).end() < column_range.start())
+				updated_unoccluded_range_list.push_back(*it);
+			else {
+				if (((*it).start() < column_range.end()) and ((*it).start() < column_range.start()))
+					updated_unoccluded_range_list.push_back(IntegerRange((*it).start(), column_range.start()));
+				break;
+			}
+	
+		// Skip everything within the column range into a single range
+		for( ; it != m_unoccluded_range_list.end(); ++it)
+			if ((*it).start() >= column_range.end())
+				break;	
+			else {
+				if ((*it).end() > column_range.end())
+					updated_unoccluded_range_list.push_back(IntegerRange(column_range.end(), (*it).end()));
+			}
+
+		// Keep anything after the column range
+		for( ; it != m_unoccluded_range_list.end(); ++it)
+			updated_unoccluded_range_list.push_back(*it);
+
+		m_unoccluded_range_list = updated_unoccluded_range_list;
 	}
 }
 
@@ -96,6 +143,8 @@ Renderer::CoverageBuffer::add(Column& column) {
 void
 Renderer::CoverageBuffer::clear() {
 	m_column_list.clear();
+	m_unoccluded_range_list.clear();
+	m_unoccluded_range_list.push_back(IntegerRange(0, m_size));
 }
 
 
@@ -209,9 +258,6 @@ Renderer::fill_coverage_buffer(CoverageBuffer& coverage_buffer,
 			// Add the column fragment
 			Column column(y_start, y_end, prev_dist, prev_dist, u_start, u_end, v_start, v_end, cell.wall_texture_id() & 0xff);
 			coverage_buffer.add(column);
-
-			// Done drawing
-			column_completed = true;
 		}
 
 		prev_axis = axis;
