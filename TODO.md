@@ -3,9 +3,10 @@
 ## Bugs
 
 * Fullscreen mode doesn't stretch the view
-* Going up or down triggers rendering bugs : rendering of a column should not
-stop just when a wall is hit when casting a ray, it should stop either when 
-the end of the map is reached or the column is full. 
+* When being low on the floor or with large FOV, the tile just at the feet
+of the observer is not rendered
+* When high above a map, top of cells is not rendered, likewise when under
+the map
 * When leaving the map boundaries, the outer walls are not rendered
 
 ## Features
