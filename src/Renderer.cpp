@@ -200,17 +200,18 @@ Renderer::fill_coverage_buffer(CoverageBuffer& coverage_buffer,
 	RayTraversal traversal(grid, ray_pos, ray_dir);
 	float prev_dist = traversal.distance_init();
 	float prev_axis = traversal.axis();
-
+	
 	// For each intersection found with the grid
 	for( ; traversal.has_next() and !column_completed; traversal.next()) {
 		float dist = traversal.distance(); 
 		int axis = traversal.axis();
-
 		const Map::Cell& cell = map.cell_array()(traversal.i(), traversal.j());
-		if (cell.height() == 0) {
-			// Generate a floor column
-			float y_start = 0;
-			float y_end = 0;
+		float cell_height = cell.height() / 256.f;
+
+		// Generate a floor column
+		if (cell_height < view_height) {
+			float y_start = cell_height;
+			float y_end   = cell_height;
 
 			float u_start, v_start;
 			u_start = ray_pos[1-axis] + dist * ray_dir[1-axis];
@@ -237,10 +238,11 @@ Renderer::fill_coverage_buffer(CoverageBuffer& coverage_buffer,
 			Column column(y_start, y_end, dist, prev_dist, u_start, u_end, v_start, v_end, cell.floor_texture_id() & 0xff);
 			coverage_buffer.add(column);
 		}
+
 		// Generate a wall column
-		else {
+		{
 			// Compute the wall slice
-			float y_start = cell.height() / 256.f;
+			float y_start = cell_height;
 			float y_end   = 0;
 
 			float u_start = ray_pos[1 - prev_axis] + prev_dist * ray_dir[1 - prev_axis];
@@ -248,7 +250,7 @@ Renderer::fill_coverage_buffer(CoverageBuffer& coverage_buffer,
 			float u_end = u_start;
 
 			float v_start = 0;
-			float v_end   = cell.height() / 256.f;
+			float v_end   = cell_height;
 
 			// Projection to screen space
 			float k = -ray_norm / prev_dist; 
