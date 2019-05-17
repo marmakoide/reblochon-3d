@@ -201,6 +201,43 @@ Renderer::fill_coverage_buffer(CoverageBuffer& coverage_buffer,
 	float prev_dist = traversal.distance_init();
 	float prev_axis = traversal.axis();
 	
+	// If the ray origin is inside the map render the piece of floor under it
+	if (grid.is_inside(ray_pos)) {
+		const Map::Cell& cell = map.cell_array()(traversal.i(), traversal.j());
+		float cell_height = cell.height() / 256.f;
+
+		if (cell_height < view_height) {
+			float y_start = cell_height;
+			float y_end   = cell_height;
+					
+			float u_start, v_start;
+			u_start = ray_pos[1-prev_axis] + prev_dist * ray_dir[1-prev_axis];
+			u_start = u_start - std::floor(u_start);
+			v_start = ray_dir[prev_axis] > 0 ? 1 : 0;
+			if (prev_axis == 1)
+				std::swap(u_start, v_start);
+
+			float dist = 2 * ray_norm * (view_height - cell_height);
+			float u_end = ray_pos[1-prev_axis] + dist * ray_dir[1-prev_axis];
+			u_end = u_end - std::floor(u_end);
+			float v_end = ray_pos[prev_axis] + dist * ray_dir[prev_axis];
+			v_end = v_end - std::floor(v_end);
+			if (prev_axis == 1)
+				std::swap(u_end, v_end);
+			
+			// Projection to screen space
+			float k = -ray_norm / dist; 
+			y_end   = m_h * (k * (y_end - view_height) + .5f); 
+
+			k = -ray_norm / prev_dist; 
+			y_start = m_h * (k * (y_start - view_height) + .5f);
+
+			// Add the column fragment
+			Column column(y_start, y_end, prev_dist, dist, u_start, u_end, v_start, v_end, cell.floor_texture_id() & 0xff);
+			coverage_buffer.add(column);	
+		}	
+	}
+
 	// For each intersection found with the grid
 	for( ; traversal.has_next() and !column_completed; traversal.next()) {
 		float dist = traversal.distance(); 
@@ -232,7 +269,7 @@ Renderer::fill_coverage_buffer(CoverageBuffer& coverage_buffer,
 			y_end = m_h * (k * (y_end - view_height) + .5f);
 
 			k = -ray_norm / dist; 
-			y_start   = m_h * (k * (y_start - view_height) + .5f); 
+			y_start = m_h * (k * (y_start - view_height) + .5f); 
 
 			// Add the column fragment
 			Column column(y_start, y_end, dist, prev_dist, u_start, u_end, v_start, v_end, cell.floor_texture_id() & 0xff);

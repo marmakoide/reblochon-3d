@@ -36,7 +36,7 @@ RayTraversal::RayTraversal(const Grid2d& grid,
 
 		for(int i = 0; i < 2; ++i) {
 			float x = std::floor((origin[i] - grid_bounds[0][i]) / grid.voxel_size());
-			m_index[i] = int(x);
+			m_index[i] = std::floor(x);
 			bounds[0][i] = x + grid_bounds[0][i];
 		}
 		bounds[1] = bounds[0].array() + 1;
