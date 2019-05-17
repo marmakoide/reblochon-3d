@@ -84,10 +84,12 @@ private:
 
 struct Settings {
 	Settings() :
-		fullscreen(false) { }
+		fullscreen(false),
+		fov(60) { }
 
 	std::string path;
 	bool fullscreen;
+	unsigned int fov;	
 }; // struct Settings
 
 
@@ -100,6 +102,7 @@ parse(int argc, char* argv[], Settings& settings) {
 			.allow_unrecognised_options()
 			.add_options()
       ("f, fullscreen", "fullscreen display mode", cxxopts::value<bool>(settings.fullscreen))
+      ("fov", "sets the field of view angle ", cxxopts::value<unsigned int>(settings.fov))
 			("i, input", "path to the map to open", cxxopts::value<std::string>(), "FILE")
 			("help", "Print help")
 		;
@@ -110,12 +113,20 @@ parse(int argc, char* argv[], Settings& settings) {
       exit(EXIT_SUCCESS);
 		}
 
+		//if (result.count("fov"))
+		//	settings.fov = result["fov"].as<unsigned int>();
+
 		if (result.count("input"))
 			settings.path = result["input"].as<std::string>();
 	}
 	catch (const cxxopts::OptionException& e) {
 		std::cerr << "error parsing options: " << e.what() << std::endl;
 		exit(EXIT_FAILURE);
+	}
+
+	if ((settings.fov <= 0) and (settings.fov >= 180)) {
+		std::cerr << "field of view angle should be in the ]0, 180[ range" << std::endl;
+		exit(EXIT_FAILURE);	
 	}
 }
 
@@ -161,7 +172,7 @@ main(int argc, char* argv[]) {
 
 	Renderer view_renderer(SCREEN_WIDTH, SCREEN_HEIGHT,
 	                       texture_atlas,
-	                       Renderer::focal_length_from_angle((M_PI / 180.f) * 60.f));
+	                       Renderer::focal_length_from_angle((M_PI / 180.f) * settings.fov));
 
 	// Create a window
 	Uint32 window_flags = 0;
