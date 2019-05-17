@@ -11,7 +11,7 @@ class Cell:
 	def __init__(self):
 		self.height = 0
 		self.wall_texture_id = 0
-		self.floor_texture_id = 255
+		self.floor_texture_id = 16
 
 
 

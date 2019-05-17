@@ -113,9 +113,6 @@ parse(int argc, char* argv[], Settings& settings) {
       exit(EXIT_SUCCESS);
 		}
 
-		//if (result.count("fov"))
-		//	settings.fov = result["fov"].as<unsigned int>();
-
 		if (result.count("input"))
 			settings.path = result["input"].as<std::string>();
 	}
