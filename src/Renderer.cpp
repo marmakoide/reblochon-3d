@@ -235,7 +235,38 @@ Renderer::fill_coverage_buffer(CoverageBuffer& coverage_buffer,
 			// Add the column fragment
 			Column column(y_start, y_end, prev_dist, dist, u_start, u_end, v_start, v_end, cell.floor_texture_id() & 0xff);
 			coverage_buffer.add(column);	
-		}	
+		}
+
+		if (view_height < 0) {
+			float y_start = 0;
+			float y_end   = 0;
+
+			float u_end, v_end;
+			u_end = ray_pos[1-prev_axis] + prev_dist * ray_dir[1-prev_axis];
+			u_end = u_end - std::floor(u_end);
+			v_end = ray_dir[prev_axis] > 0 ? 1 : 0;
+			if (prev_axis == 1)
+				std::swap(u_end, v_end);			
+			
+			float dist = 2 * ray_norm * -view_height;
+			float u_start = ray_pos[1-prev_axis] + dist * ray_dir[1-prev_axis];
+			u_start = u_start - std::floor(u_start);
+			float v_start = ray_pos[prev_axis] + dist * ray_dir[prev_axis];
+			v_start = v_start - std::floor(v_start);
+			if (prev_axis == 1)
+				std::swap(u_start, v_start);
+
+			// Projection to screen space
+			float k = -ray_norm / prev_dist; 
+			y_end = m_h * (k * (y_end - view_height) + .5f); 
+
+			k = -ray_norm / dist; 
+			y_start = m_h * (k * (y_start - view_height) + .5f);
+
+			// Add the column fragment
+			Column column(y_start, y_end, dist, prev_dist, u_start, u_end, v_start, v_end, cell.floor_texture_id() & 0xff);
+			coverage_buffer.add(column);
+		}
 	}
 
 	// For each intersection found with the grid
@@ -245,7 +276,7 @@ Renderer::fill_coverage_buffer(CoverageBuffer& coverage_buffer,
 		const Map::Cell& cell = map.cell_array()(traversal.i(), traversal.j());
 		float cell_height = cell.height() / 256.f;
 
-		// Generate a floor column
+		// Generate a column for the cell top (ie. floor)
 		if (cell_height < view_height) {
 			float y_start = cell_height;
 			float y_end   = cell_height;
@@ -276,7 +307,38 @@ Renderer::fill_coverage_buffer(CoverageBuffer& coverage_buffer,
 			coverage_buffer.add(column);
 		}
 
-		// Generate a wall column
+		// Generate a column for the cell bottom (ie. ceiling)
+		if (view_height < 0) {
+			float y_start = 0;
+			float y_end   = 0;
+
+			float u_start, v_start;
+			u_start = ray_pos[1-prev_axis] + prev_dist * ray_dir[1-prev_axis];
+			u_start = u_start - std::floor(u_start);
+			v_start = ray_dir[prev_axis] > 0 ? 0 : 1;
+			if (prev_axis == 1)
+				std::swap(u_start, v_start);			
+					
+			float u_end, v_end;
+			u_end = ray_pos[1-axis] + dist * ray_dir[1-axis];
+			u_end = u_end - std::floor(u_end);
+			v_end = ray_dir[axis] > 0 ? 1 : 0;
+			if (axis == 1)
+				std::swap(u_end, v_end);
+
+			// Projection to screen space
+			float k = -ray_norm / prev_dist; 
+			y_start = m_h * (k * (y_start - view_height) + .5f); 
+
+			k = -ray_norm / dist; 
+			y_end = m_h * (k * (y_end - view_height) + .5f);
+
+			// Add the column fragment
+			Column column(y_start, y_end, prev_dist, dist, u_start, u_end, v_start, v_end, cell.floor_texture_id() & 0xff);
+			coverage_buffer.add(column);
+		}
+
+		// Generate a column for cell side (ie. wall)
 		{
 			// Compute the wall slice
 			float y_start = cell_height;

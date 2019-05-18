@@ -6,13 +6,15 @@ A silly 3d game engine using mid 90's rendering tech
 
 * 100% software rendering
 * Raycasting on a grid
+* Variable heights wall
+* Accurate rendering from any point of view, even outside of the map boundaries
 * Fixed 256 colors palette
 
 The intention is to have a game engine as convenient as [love2d](https://love2d.org)
 
 ![screenshot of current state](splash.png)
 
-Current state: perspective-correct textured walls and floors, fixed height walls, editor does not edit anything.
+Current state: perspective-correct textured walls and floors, variable height walls, editor does not edit anything.
 
 ## Getting Started
 

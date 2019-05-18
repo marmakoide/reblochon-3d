@@ -3,8 +3,6 @@
 ## Bugs
 
 * Fullscreen mode doesn't stretch the view
-* When high above a map, top of cells is not rendered, likewise when under
-the map
 * When leaving the map boundaries, the outer walls are not rendered
 
 ## Features
