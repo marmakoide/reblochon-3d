@@ -33,6 +33,7 @@ RayTraversal::RayTraversal(const Grid2d& grid,
 	Eigen::Vector2f bounds[2];
 	if (grid.is_inside(origin)) {
 		m_t_init = 0;
+		m_axis_init = 0;
 
 		for(int i = 0; i < 2; ++i) {
 			float x = std::floor((origin[i] - grid_bounds[0][i]) / grid.voxel_size());
@@ -47,14 +48,30 @@ RayTraversal::RayTraversal(const Grid2d& grid,
 		Eigen::Vector2f t_lo =  (grid_bounds[0] - origin).cwiseProduct(inv_direction);
 		Eigen::Vector2f t_hi =  (grid_bounds[1] - origin).cwiseProduct(inv_direction);
 
-		float t_min = std::fmin(t_lo.x(), t_hi.x());
-		float t_max = std::fmax(t_lo.x(), t_hi.x());
+		float tx_min = std::fmin(t_lo.x(), t_hi.x());
+		float tx_max = std::fmax(t_lo.x(), t_hi.x());
 
-		t_min = std::fmax(t_min, std::fmin(t_lo.y(), t_hi.y()));
-		t_max = std::fmin(t_max, std::fmax(t_lo.y(), t_hi.y()));
+		float ty_min = std::fmin(t_lo.y(), t_hi.y());
+		float ty_max = std::fmax(t_lo.y(), t_hi.y());
+
+		float t_min, t_max;
+		if (tx_min > ty_min) {
+			t_min = tx_min;
+			m_axis_init = 0;
+		}
+		else 	{
+			t_min = ty_min;
+			m_axis_init = 1;
+		}
+
+		if (tx_max < ty_max)
+			t_max = tx_max;
+		else 	
+			t_max = ty_max;
 
 		if ((t_min > t_max) || (t_max < 0)) {
 			m_t_init = 0;
+			m_axis_init = 0;
 			m_index[0] = m_index[1] = -1; 
 			return;
 		}
@@ -73,11 +90,13 @@ RayTraversal::RayTraversal(const Grid2d& grid,
 
 		bounds[0] = m_index.cast<float>() + grid_bounds[0] / grid.voxel_size();
 		bounds[1] = bounds[0].array() + 1;
+
 	}
 
 	// Ray parameter
 	for(int i = 0; i < 2; ++i)
 		m_t[i] = (grid.voxel_size() * bounds[1 - sign[i]][i] - origin(i)) / direction(i);
 
-	m_t_init = m_t.minCoeff();
+	if (grid.is_inside(origin))
+		m_t_init = m_t.minCoeff();
 }

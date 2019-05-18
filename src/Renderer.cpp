@@ -199,8 +199,8 @@ Renderer::fill_coverage_buffer(CoverageBuffer& coverage_buffer,
 	// Ray/grid intersection setup
 	RayTraversal traversal(grid, ray_pos, ray_dir);
 	float prev_dist = traversal.distance_init();
-	float prev_axis = traversal.axis();
-	
+	float prev_axis = traversal.axis_init();
+
 	// If the ray origin is inside the map render the piece of floor under it
 	if (grid.is_inside(ray_pos)) {
 		const Map::Cell& cell = map.cell_array()(traversal.i(), traversal.j());

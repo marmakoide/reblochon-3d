@@ -65,6 +65,11 @@ namespace reb {
 		}
 
 		int
+		axis_init() const {
+			return m_axis_init;
+		}
+
+		int
 		axis() const {
 			Eigen::Index axis;
 			m_t.minCoeff(&axis);
@@ -109,6 +114,7 @@ namespace reb {
 
 	private:
 		float m_t_init;
+		int m_axis_init;
 		Eigen::Vector2f m_t;
 		Eigen::Vector2f m_t_delta;
 		Eigen::Vector2i m_size;
