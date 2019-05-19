@@ -97,6 +97,8 @@ RayTraversal::RayTraversal(const Grid2d& grid,
 	for(int i = 0; i < 2; ++i)
 		m_t[i] = (grid.voxel_size() * bounds[1 - sign[i]][i] - origin(i)) / direction(i);
 
-	if (grid.is_inside(origin))
+	if (grid.is_inside(origin)) {
 		m_t_init = m_t.minCoeff();
+		m_axis_init = axis();
+	}
 }

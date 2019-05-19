@@ -224,7 +224,7 @@ Renderer::fill_coverage_buffer(CoverageBuffer& coverage_buffer,
 			v_end = v_end - std::floor(v_end);
 			if (prev_axis == 1)
 				std::swap(u_end, v_end);
-			
+
 			// Projection to screen space
 			float k = -ray_norm / dist; 
 			y_end   = m_h * (k * (y_end - view_height) + .5f); 
