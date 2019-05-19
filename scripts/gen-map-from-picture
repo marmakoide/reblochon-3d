@@ -11,7 +11,7 @@ class Cell:
 	def __init__(self):
 		self.height = 0
 		self.wall_texture_id = 0
-		self.floor_texture_id = 16
+		self.top_texture_id = 16
 
 
 
@@ -41,7 +41,7 @@ def load_input_picture(path):
 
 
 
-def generate_map(img_w, img_h, img_pixels):
+def generate_map(img_w, img_h, img_pixels, top_texture_id):
 	# Create a map instance
 	ret = Map(img_w, img_h)
 
@@ -53,6 +53,7 @@ def generate_map(img_w, img_h, img_pixels):
 				ret.spawn_point = (256 * j + 127 - 128 * img_w, 256 * i + 127 - 128 * img_h)
 			elif pixel == 63:
 				cell.height = 640
+			cell.top_texture_id = top_texture_id
 
 	# Job done
 	return ret
@@ -84,13 +85,14 @@ def save_map(path, map_obj):
 			for cell in cell_row:
 				f.write(cell.height.to_bytes(4, byteorder = 'little', signed = False))
 				f.write(cell.wall_texture_id.to_bytes(1, byteorder = 'little', signed = False))
-				f.write(cell.floor_texture_id.to_bytes(1, byteorder = 'little', signed = False))
+				f.write(cell.top_texture_id.to_bytes(1, byteorder = 'little', signed = False))
 
 
 
 def main():
 	# Command line
 	parser = argparse.ArgumentParser(description = 'Generate a map for reblochon-3d from a PNG picture')
+	parser.add_argument('--top-texture-id', type = int, default = 16, help='Texture id for top of a block')
 	parser.add_argument('input_path', help='Path to PNG picture (8 bits indexed color)')
 	parser.add_argument('output_path', help='Path to output file')
 	args = parser.parse_args()
@@ -106,7 +108,7 @@ def main():
 		return
 
 	# Generate and write the map
-	save_map(args.output_path, generate_map(img_w, img_h, img_pixels))
+	save_map(args.output_path, generate_map(img_w, img_h, img_pixels, args.top_texture_id))
 
 
 
