@@ -4,6 +4,7 @@
 #include "Renderer.h"
 #include "Macros.h"
 #include "cxxopts.h"
+#include <iostream>
 
 using namespace reb;
 
@@ -116,7 +117,7 @@ parse(int argc, char* argv[], Settings& settings) {
 		if (result.count("input"))
 			settings.path = result["input"].as<std::string>();
 	}
-	catch (const cxxopts::OptionException& e) {
+	catch (const cxxopts::exceptions::exception& e) {
 		std::cerr << "error parsing options: " << e.what() << std::endl;
 		exit(EXIT_FAILURE);
 	}
