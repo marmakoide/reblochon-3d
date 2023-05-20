@@ -26,12 +26,7 @@ namespace reb {
 			m_data(w * h) {
 		}
 
-		inline Array2dT(const Array2dT<T>& other) : 
-			m_w(other.w()),
-			m_h(other.h()),
-			m_data(other.data()) { }
-
-
+		inline Array2dT(const Array2dT<T>& other) = default;
 
 		inline size_type w() const {
 			return m_w;
@@ -70,7 +65,7 @@ namespace reb {
 		size_type m_w, m_h;
 		ArrayT<T> m_data;
 	}; // class Array2dT
-}
+} // namespace reb
 
 
 

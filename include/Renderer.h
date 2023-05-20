@@ -20,15 +20,7 @@ namespace reb {
 			m_start(start),
 			m_end(end) { }
 
-		inline IntegerRange(const IntegerRange& other) :
-			m_start(other.m_start),
-			m_end(other.m_end) { }
-
-		inline IntegerRange& operator = (const IntegerRange& other) {
-			m_start = other.m_start;
-			m_end = other.m_end;
-			return *this;
-		}
+		inline IntegerRange(const IntegerRange& other) = default;
 
 		inline int start() const { return m_start; }
 
@@ -141,7 +133,7 @@ namespace reb {
 
 
 		Renderer(int w, int h,
-						 SDL_Surface* texture_atlas,
+		         SDL_Surface* texture_atlas,
 		         float focal_length);
 
 		void
